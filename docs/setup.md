@@ -17,24 +17,26 @@ If your OpenClaw gateway is only available on a private network such as Tailscal
 Install the plugin into OpenClaw:
 
 ```bash
-openclaw plugins install @itspers/openclaw-leadtime-plugin
+openclaw plugins install git:github.com/itspers/openclaw-leadtime-plugin@main
 openclaw plugins enable leadtime
 ```
 
 Run the setup wizard:
 
 ```bash
-npx @itspers/openclaw-leadtime-plugin setup
+npx --yes github:itspers/openclaw-leadtime-plugin setup
 ```
 
 The wizard patches `~/.openclaw/openclaw.json`, enables the plugin, sets `agents.defaults.skipBootstrap=true` for clean headless task sessions, and prints the webhook URL you should save in Leadtime.
 
 Restart your OpenClaw gateway after the wizard.
 
+You can run the wizard again later to connect another Leadtime bot to another OpenClaw agent. Existing Leadtime bot entries are preserved. If you run it again with the same Leadtime bot user id, that bot entry is updated.
+
 ## Non-Interactive Setup
 
 ```bash
-npx @itspers/openclaw-leadtime-plugin setup \
+npx --yes github:itspers/openclaw-leadtime-plugin setup \
   --leadtime-base-url https://leadtime.app \
   --gateway-public-url https://openclaw.example.com \
   --bot-user-id leadtime-bot-user-id \
@@ -55,7 +57,7 @@ https://openclaw.example.com/leadtime/webhook
 If you prefer to let a coding agent configure your existing OpenClaw installation, generate a prompt:
 
 ```bash
-npx @itspers/openclaw-leadtime-plugin --print-agent-prompt \
+npx --yes github:itspers/openclaw-leadtime-plugin --print-agent-prompt \
   --leadtime-base-url https://leadtime.app \
   --gateway-public-url https://openclaw.example.com \
   --bot-user-id leadtime-bot-user-id
@@ -110,4 +112,3 @@ Use `basic` first. It exposes task/session tools only: read context/task, write 
 Use `full` when the agent should access the generic Leadtime public API tool wrapper.
 
 Use `exposeRawApiCredentialToAgent=true` only for trusted agents. It gives the agent direct access to the bot PAT for script-based bulk API calls.
-

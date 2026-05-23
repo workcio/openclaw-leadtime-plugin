@@ -7,14 +7,14 @@ Leadtime calls this plugin through the bot webhook. The plugin verifies the Lead
 ## Install
 
 ```bash
-openclaw plugins install @itspers/openclaw-leadtime-plugin
+openclaw plugins install git:github.com/itspers/openclaw-leadtime-plugin@main
 openclaw plugins enable leadtime
 ```
 
 Then run the setup wizard on the same machine as your OpenClaw gateway:
 
 ```bash
-npx @itspers/openclaw-leadtime-plugin setup
+npx --yes github:itspers/openclaw-leadtime-plugin setup
 ```
 
 For local development:

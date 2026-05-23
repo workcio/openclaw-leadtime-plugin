@@ -20,7 +20,8 @@
     "build": "tsup index.ts src/setup-cli.ts --format esm --dts --clean",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "prepare": "npm run build"
   },
   "openclaw": {
     "extensions": [

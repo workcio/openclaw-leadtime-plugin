@@ -59,7 +59,7 @@ async function main() {
   console.log("");
   console.log("Next steps:");
   console.log("1. Install/enable the plugin if it is not installed yet:");
-  console.log("   openclaw plugins install @itspers/openclaw-leadtime-plugin");
+  console.log("   openclaw plugins install git:github.com/itspers/openclaw-leadtime-plugin@main");
   console.log("   openclaw plugins enable leadtime");
   console.log("2. Restart the OpenClaw gateway.");
   console.log(`3. In Leadtime, set this bot webhook URL to: ${webhookUrl}`);

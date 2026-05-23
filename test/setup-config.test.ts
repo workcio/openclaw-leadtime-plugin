@@ -69,6 +69,72 @@ describe("setup config helpers", () => {
     expect((merged.plugins as any).entries.leadtime.config.bots[0].mode).toBe("full");
   });
 
+  it("adds a second bot without replacing the first bot", () => {
+    const first = mergeOpenClawConfig(
+      {},
+      {
+        leadtimeBaseUrl: "https://leadtime.app",
+        bot: {
+          botUserId: "bot-1",
+          botPat: "pat-1",
+          webhookSecret: "secret-1",
+          agentId: "agent-one",
+        },
+      },
+    );
+
+    const second = mergeOpenClawConfig(first, {
+      leadtimeBaseUrl: "https://leadtime.app",
+      bot: {
+        botUserId: "bot-2",
+        botPat: "pat-2",
+        webhookSecret: "secret-2",
+        agentId: "agent-two",
+        mode: "full",
+      },
+    });
+
+    const bots = (second.plugins as any).entries.leadtime.config.bots;
+    expect(bots).toHaveLength(2);
+    expect(bots.map((bot: any) => bot.botUserId)).toEqual(["bot-1", "bot-2"]);
+  });
+
+  it("updates an existing bot by bot user id", () => {
+    const first = mergeOpenClawConfig(
+      {},
+      {
+        leadtimeBaseUrl: "https://leadtime.app",
+        bot: {
+          botUserId: "bot-1",
+          botPat: "old-pat",
+          webhookSecret: "old-secret",
+          agentId: "agent-one",
+        },
+      },
+    );
+
+    const updated = mergeOpenClawConfig(first, {
+      leadtimeBaseUrl: "https://leadtime.app",
+      bot: {
+        botUserId: "bot-1",
+        botPat: "new-pat",
+        webhookSecret: "new-secret",
+        agentId: "agent-two",
+        mode: "full",
+      },
+    });
+
+    const bots = (updated.plugins as any).entries.leadtime.config.bots;
+    expect(bots).toHaveLength(1);
+    expect(bots[0]).toMatchObject({
+      botUserId: "bot-1",
+      botPat: "new-pat",
+      webhookSecret: "new-secret",
+      agentId: "agent-two",
+      mode: "full",
+    });
+  });
+
   it("builds copy-paste agent prompt", () => {
     const prompt = buildAgentInstallPrompt({
       leadtimeBaseUrl: "https://leadtime.app",

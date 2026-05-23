@@ -40,7 +40,6 @@ export function buildWebhookUrl(gatewayPublicUrl: string, webhookPath = "/leadti
 }
 
 export function buildOpenClawPluginConfig(input: SetupInput): Record<string, unknown> {
-  const bot = input.bot;
   return {
     leadtimeBaseUrl: normalizeLeadtimeApiBaseUrl(input.leadtimeBaseUrl),
     webhookPath: normalizeWebhookPath(input.webhookPath),
@@ -48,18 +47,20 @@ export function buildOpenClawPluginConfig(input: SetupInput): Record<string, unk
       timeoutSeconds: 900,
       thinking: "minimal",
     },
-    bots: [
-      {
-        name: bot.name?.trim() || "Leadtime Bot",
-        botUserId: bot.botUserId.trim(),
-        botPat: bot.botPat.trim(),
-        webhookSecret: bot.webhookSecret.trim(),
-        agentId: bot.agentId?.trim() || "main",
-        mode: bot.mode === "full" ? "full" : "basic",
-        promptGuidance: bot.promptGuidance?.trim() || undefined,
-        exposeRawApiCredentialToAgent: bot.exposeRawApiCredentialToAgent === true,
-      },
-    ],
+    bots: [buildOpenClawBotConfig(input.bot)],
+  };
+}
+
+function buildOpenClawBotConfig(bot: SetupBotInput): Record<string, unknown> {
+  return {
+    name: bot.name?.trim() || "Leadtime Bot",
+    botUserId: bot.botUserId.trim(),
+    botPat: bot.botPat.trim(),
+    webhookSecret: bot.webhookSecret.trim(),
+    agentId: bot.agentId?.trim() || "main",
+    mode: bot.mode === "full" ? "full" : "basic",
+    promptGuidance: bot.promptGuidance?.trim() || undefined,
+    exposeRawApiCredentialToAgent: bot.exposeRawApiCredentialToAgent === true,
   };
 }
 
@@ -75,8 +76,36 @@ export function mergeOpenClawConfig(existing: Record<string, unknown>, input: Se
   const entries = objectAt(plugins, "entries");
   const leadtime = objectAt(entries, "leadtime");
   leadtime["enabled"] = true;
-  leadtime["config"] = buildOpenClawPluginConfig(input);
+  leadtime["config"] = mergeLeadtimePluginConfig(leadtime["config"], input);
   return config;
+}
+
+function mergeLeadtimePluginConfig(existing: unknown, input: SetupInput): Record<string, unknown> {
+  const previous = existing && typeof existing === "object" && !Array.isArray(existing) ? structuredClone(existing) as Record<string, unknown> : {};
+  const nextBot = buildOpenClawBotConfig(input.bot);
+  const existingBots = Array.isArray(previous["bots"]) ? previous["bots"] : [];
+  const nextBotUserId = String(nextBot["botUserId"]);
+  const bots = [
+    ...existingBots.filter((candidate) => {
+      if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return false;
+      return String((candidate as Record<string, unknown>)["botUserId"]) !== nextBotUserId;
+    }),
+    nextBot,
+  ];
+
+  return {
+    ...previous,
+    leadtimeBaseUrl: normalizeLeadtimeApiBaseUrl(input.leadtimeBaseUrl),
+    webhookPath: normalizeWebhookPath(input.webhookPath),
+    runner: {
+      timeoutSeconds: 900,
+      thinking: "minimal",
+      ...(previous["runner"] && typeof previous["runner"] === "object" && !Array.isArray(previous["runner"])
+        ? previous["runner"] as Record<string, unknown>
+        : {}),
+    },
+    bots,
+  };
 }
 
 export function buildAgentInstallPrompt(input: {
