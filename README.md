@@ -82,6 +82,8 @@ Set `exposeRawApiCredentialToAgent: true` only for trusted agents. It puts the b
 
 See [examples/docker-compose.yml](examples/docker-compose.yml). Mount `~/.codex` and `~/.openclaw` if your OpenClaw agent uses the local Codex auth profile. For OAuth-based model providers, prefer a copied writable OpenClaw state directory per container so the host and container do not race on the same refresh token.
 
+For headless/plugin-only gateways, initialize OpenClaw first or set `agents.defaults.skipBootstrap: true` in `openclaw.json`. A brand-new OpenClaw workspace may otherwise inject first-run bootstrap guidance into the first Leadtime task session.
+
 ## Development
 
 ```bash

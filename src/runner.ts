@@ -55,6 +55,7 @@ export async function dispatchLeadtimeSession(params: {
       payload: params.payload,
       runId,
     }),
+    lightContext: true,
     idempotencyKey: `leadtime-${runId}-${params.eventId}`,
   });
   const wait = await params.runtime.subagent.waitForRun({
