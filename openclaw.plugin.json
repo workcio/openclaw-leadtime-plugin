@@ -1,0 +1,65 @@
+{
+  "id": "leadtime",
+  "uiHints": {
+    "leadtimeBaseUrl": {
+      "label": "Leadtime API base URL",
+      "help": "Base URL including /api, for example https://app.leadtime.de/api or http://host.docker.internal:4205/api."
+    },
+    "webhookPath": {
+      "label": "Webhook path",
+      "help": "Path exposed by OpenClaw for Leadtime webhooks. Default: /leadtime/webhook."
+    },
+    "bots": {
+      "label": "Leadtime bots",
+      "help": "One or more Leadtime bot connections."
+    }
+  },
+  "contracts": {
+    "tools": [
+      "leadtime_get_session_context",
+      "leadtime_read_task",
+      "leadtime_add_task_comment",
+      "leadtime_list_task_statuses",
+      "leadtime_update_task_status",
+      "leadtime_list_actions",
+      "leadtime_action_details",
+      "leadtime_execute_action"
+    ],
+    "httpRoutes": ["/leadtime/webhook"]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "leadtimeBaseUrl": { "type": "string" },
+      "webhookPath": { "type": "string" },
+      "runner": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "command": { "type": "string" },
+          "timeoutSeconds": { "type": "number" },
+          "thinking": { "type": "string" }
+        }
+      },
+      "bots": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["botUserId", "botPat", "webhookSecret"],
+          "properties": {
+            "name": { "type": "string" },
+            "botUserId": { "type": "string" },
+            "botPat": { "type": ["string", "object"] },
+            "webhookSecret": { "type": ["string", "object"] },
+            "agentId": { "type": "string" },
+            "mode": { "type": "string", "enum": ["basic", "full"] },
+            "promptGuidance": { "type": "string" },
+            "exposeRawApiCredentialToAgent": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "@itspers/openclaw-leadtime-plugin",
+  "version": "0.1.0",
+  "description": "OpenClaw plugin for Leadtime self-hosted agent sessions",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "openclaw.plugin.json",
+    "README.md",
+    "docs",
+    "examples"
+  ],
+  "scripts": {
+    "build": "tsup index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint . --ext .ts"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.4.0"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.41"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "openclaw": "2026.4.29",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14"
+  }
+}

@@ -1,0 +1,24 @@
+services:
+  openclaw:
+    image: node:24-bookworm
+    working_dir: /work/plugin
+    command: >
+      bash -lc "npm install -g openclaw@$${OPENCLAW_VERSION:-2026.4.29} &&
+      cp -R /srcplugin/. /work/plugin &&
+      rm -rf /work/plugin/node_modules &&
+      npm install &&
+      npm install openclaw@$${OPENCLAW_VERSION:-2026.4.29} &&
+      npm run build &&
+      openclaw plugins install --link /work/plugin &&
+      openclaw gateway run --port 19011 --auth token --token $${OPENCLAW_GATEWAY_TOKEN:-change-me} --bind auto --allow-unconfigured"
+    ports:
+      - "19011:19011"
+    volumes:
+      - .:/srcplugin:ro
+      - ${OPENCLAW_STATE_DIR:-${HOME}/.openclaw}:/root/.openclaw
+      - ${CODEX_STATE_DIR:-${HOME}/.codex}:/root/.codex:ro
+    environment:
+      LEADTIME_BOT_PAT: ${LEADTIME_BOT_PAT}
+      LEADTIME_WEBHOOK_SECRET: ${LEADTIME_WEBHOOK_SECRET}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
