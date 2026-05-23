@@ -1,5 +1,5 @@
 {
-  "name": "@itspers/openclaw-leadtime-plugin",
+  "name": "@workcio/openclaw-leadtime-plugin",
   "version": "0.1.0",
   "description": "OpenClaw plugin for Leadtime self-hosted agent sessions",
   "type": "module",

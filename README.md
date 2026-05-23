@@ -7,15 +7,19 @@ Leadtime calls this plugin through the bot webhook. The plugin verifies the Lead
 ## Install
 
 ```bash
-openclaw plugins install git:github.com/itspers/openclaw-leadtime-plugin@main
+openclaw plugins install git:github.com/workcio/openclaw-leadtime-plugin@main
 openclaw plugins enable leadtime
 ```
 
-Then run the setup wizard on the same machine as your OpenClaw gateway:
+Then generate a one-time setup code in Leadtime bot settings and run the setup wizard on the same machine as your OpenClaw gateway:
 
 ```bash
-npx --yes github:itspers/openclaw-leadtime-plugin setup
+npx --yes github:workcio/openclaw-leadtime-plugin setup \
+  --leadtime-base-url https://leadtime.app \
+  --claim lt_conn_...
 ```
+
+The wizard runs on the OpenClaw machine, so it resolves the gateway public URL from existing config or environment. If it detects a private/local URL for Leadtime Cloud, it stops before claiming the setup code and explains how to expose OpenClaw safely.
 
 For local development:
 
@@ -26,11 +30,10 @@ openclaw plugins install --link /path/to/openclaw-leadtime-plugin
 ## Leadtime Setup
 
 1. In Leadtime, create or open a self-hosted bot.
-2. Create a bot Personal Access Token with read/write API access.
-3. Enable the bot self-hosted agent connection.
-4. Set the webhook URL to your OpenClaw gateway route, for example `https://openclaw.example.com/leadtime/webhook`.
-5. Generate/copy the Leadtime webhook signing secret.
-6. Add the bot to this plugin config.
+2. Open the OpenClaw setup helper and generate a one-time setup code.
+3. Run the generated command on the OpenClaw machine.
+
+Claiming the setup code enables webhooks/sessions in Leadtime, creates a fresh bot PAT, stores the webhook URL, and writes the returned one-time secrets into OpenClaw config.
 
 For step-by-step setup, existing VPS/local gateway notes, and agent-assisted install prompts, see [docs/setup.md](docs/setup.md).
 

@@ -143,7 +143,7 @@ describe("setup config helpers", () => {
       mode: "basic",
     });
 
-    expect(prompt).toContain("https://github.com/itspers/openclaw-leadtime-plugin");
+    expect(prompt).toContain("https://github.com/workcio/openclaw-leadtime-plugin");
     expect(prompt).toContain("Webhook URL to save in Leadtime: https://agent.example.com/leadtime/webhook");
     expect(prompt).toContain("Leadtime bot user id: bot-1");
   });

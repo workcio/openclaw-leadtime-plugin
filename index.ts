@@ -22,7 +22,7 @@ export default definePluginEntry({
         | { config?: Record<string, unknown> }
         | undefined)?.config;
       const configFromPackageEntry = (api.config.plugins?.entries?.[
-        "@itspers/openclaw-leadtime-plugin"
+        "@workcio/openclaw-leadtime-plugin"
       ] as
         | { config?: Record<string, unknown> }
         | undefined)?.config;

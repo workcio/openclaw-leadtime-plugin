@@ -97,6 +97,7 @@ function mergeLeadtimePluginConfig(existing: unknown, input: SetupInput): Record
     ...previous,
     leadtimeBaseUrl: normalizeLeadtimeApiBaseUrl(input.leadtimeBaseUrl),
     webhookPath: normalizeWebhookPath(input.webhookPath),
+    gatewayPublicUrl: input.gatewayPublicUrl?.trim() || previous["gatewayPublicUrl"],
     runner: {
       timeoutSeconds: 900,
       thinking: "minimal",
@@ -117,11 +118,11 @@ export function buildAgentInstallPrompt(input: {
   exposeRawApiCredentialToAgent?: boolean;
 }): string {
   const webhookPath = normalizeWebhookPath(input.webhookPath);
-  const webhookUrl = input.gatewayPublicUrl ? buildWebhookUrl(input.gatewayPublicUrl, webhookPath) : "<your-openclaw-public-url>/leadtime/webhook";
+  const webhookUrl = input.gatewayPublicUrl ? buildWebhookUrl(input.gatewayPublicUrl, webhookPath) : "resolved by the setup wizard";
   return [
     "Install and configure the Leadtime OpenClaw plugin in this OpenClaw gateway.",
     "",
-    "Repository: https://github.com/itspers/openclaw-leadtime-plugin",
+    "Repository: https://github.com/workcio/openclaw-leadtime-plugin",
     `Leadtime API base URL: ${normalizeLeadtimeApiBaseUrl(input.leadtimeBaseUrl)}`,
     `Leadtime bot user id: ${input.botUserId}`,
     `Webhook path: ${webhookPath}`,
@@ -129,8 +130,8 @@ export function buildAgentInstallPrompt(input: {
     `Mode: ${input.mode === "full" ? "full" : "basic"}`,
     `Expose raw Leadtime API credential to the agent: ${input.exposeRawApiCredentialToAgent === true ? "yes" : "no"}`,
     "",
-    "Ask me for the bot PAT and Leadtime webhook signing secret if they are not already available.",
-    "Install the plugin with OpenClaw, patch ~/.openclaw/openclaw.json under plugins.entries.leadtime.config, keep agents.defaults.skipBootstrap=true for this headless connector, then restart the OpenClaw gateway.",
+    "Prefer the one-time setup code flow from Leadtime bot settings when available. If only manual credentials are available, ask me for the bot PAT and Leadtime webhook signing secret.",
+    "Install the plugin with OpenClaw, patch ~/.openclaw/openclaw.json under plugins.entries.leadtime.config, keep agents.defaults.skipBootstrap=true for this headless connector, and let the setup wizard resolve the gateway public URL from existing config or by asking on the OpenClaw machine.",
     "After restart, verify that the configured webhook URL is reachable from Leadtime and that the plugin route accepts signed Leadtime webhooks.",
   ].join("\n");
 }

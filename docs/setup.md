@@ -5,29 +5,31 @@ Use this plugin with an existing OpenClaw gateway on your laptop, workstation, o
 ## What You Need
 
 - A Leadtime self-hosted bot.
-- A Leadtime bot PAT with `api:read` and `api:write`.
-- The bot webhook signing secret from Leadtime.
+- A one-time setup code from the bot's OpenClaw setup helper.
 - An OpenClaw gateway URL that Leadtime can reach.
 - The OpenClaw agent id to run, usually `main`.
 
-If your OpenClaw gateway is only available on a private network such as Tailscale, Leadtime Cloud cannot call it unless Leadtime is also inside that network. Use a public HTTPS reverse proxy, tunnel, or a publicly reachable VPS URL for the webhook endpoint.
+If your OpenClaw gateway is only available on a private network such as Tailscale, Leadtime Cloud cannot call it unless Leadtime is also inside that network. Use a public HTTPS reverse proxy, Tailscale Funnel, a named Cloudflare Tunnel, or a publicly reachable VPS URL for the webhook endpoint.
 
 ## Fast Path
 
 Install the plugin into OpenClaw:
 
 ```bash
-openclaw plugins install git:github.com/itspers/openclaw-leadtime-plugin@main
+openclaw plugins install git:github.com/workcio/openclaw-leadtime-plugin@main
 openclaw plugins enable leadtime
 ```
 
-Run the setup wizard:
+Generate a setup code in Leadtime, then run the setup wizard:
 
 ```bash
-npx --yes github:itspers/openclaw-leadtime-plugin setup
+npx --yes github:workcio/openclaw-leadtime-plugin setup \
+  --leadtime-base-url https://leadtime.app \
+  --claim lt_conn_... \
+  --agent-id main
 ```
 
-The wizard patches `~/.openclaw/openclaw.json`, enables the plugin, sets `agents.defaults.skipBootstrap=true` for clean headless task sessions, and prints the webhook URL you should save in Leadtime.
+Claiming the setup code enables webhooks/sessions in Leadtime, creates a fresh bot PAT, stores the OpenClaw webhook URL, patches `~/.openclaw/openclaw.json`, enables the plugin, and sets `agents.defaults.skipBootstrap=true` for clean headless task sessions. The wizard resolves the gateway public URL on the OpenClaw machine from existing config or environment. If it detects a local/private URL for Leadtime Cloud, it stops before claiming the setup code and prints setup options.
 
 Restart your OpenClaw gateway after the wizard.
 
@@ -35,8 +37,34 @@ You can run the wizard again later to connect another Leadtime bot to another Op
 
 ## Non-Interactive Setup
 
+Preferred setup uses a one-time claim code:
+
 ```bash
-npx --yes github:itspers/openclaw-leadtime-plugin setup \
+npx --yes github:workcio/openclaw-leadtime-plugin setup \
+  --leadtime-base-url https://leadtime.app \
+  --claim "$LEADTIME_OPENCLAW_SETUP_CODE" \
+  --agent-id main \
+  --mode basic
+```
+
+For fully headless installs, provide `LEADTIME_OPENCLAW_GATEWAY_PUBLIC_URL=https://openclaw.example.com` or pass `--gateway-public-url`. Interactive installs do not need it in the generated Leadtime command.
+
+## Private Networks
+
+Leadtime webhooks require Leadtime to call your OpenClaw gateway. A local URL, LAN address, or Tailscale-only Serve URL is not enough for Leadtime Cloud.
+
+Recommended options:
+
+- Tailscale Funnel: use OpenClaw's Funnel mode, for example `openclaw gateway --tailscale funnel --auth password`.
+- Named Cloudflare Tunnel: stable and suitable for production when mapped to your own hostname.
+- Reverse proxy: expose `http://127.0.0.1:18789` through nginx, Caddy, Traefik, or a similar HTTPS proxy.
+
+Cloudflare Quick Tunnels are useful for temporary testing, but they are not a permanent bot webhook URL because account-less quick tunnel hostnames are not guaranteed stable.
+
+Manual setup is still available for custom wrappers or advanced debugging:
+
+```bash
+npx --yes github:workcio/openclaw-leadtime-plugin setup \
   --leadtime-base-url https://leadtime.app \
   --gateway-public-url https://openclaw.example.com \
   --bot-user-id leadtime-bot-user-id \
@@ -46,24 +74,19 @@ npx --yes github:itspers/openclaw-leadtime-plugin setup \
   --mode basic
 ```
 
-Save this webhook URL in Leadtime:
-
-```text
-https://openclaw.example.com/leadtime/webhook
-```
+When using `--claim`, Leadtime saves the webhook URL during claim. With manual setup, save `https://openclaw.example.com/leadtime/webhook` in Leadtime yourself.
 
 ## Agent-Assisted Setup
 
 If you prefer to let a coding agent configure your existing OpenClaw installation, generate a prompt:
 
 ```bash
-npx --yes github:itspers/openclaw-leadtime-plugin --print-agent-prompt \
+npx --yes github:workcio/openclaw-leadtime-plugin --print-agent-prompt \
   --leadtime-base-url https://leadtime.app \
-  --gateway-public-url https://openclaw.example.com \
   --bot-user-id leadtime-bot-user-id
 ```
 
-Paste the generated prompt into Codex, OpenClaw, Claude Code, Cursor, or another coding agent that has access to your OpenClaw machine. Give it the bot PAT and webhook signing secret only when you trust that agent and environment.
+Paste the generated prompt from Leadtime into Codex, OpenClaw, Claude Code, Cursor, or another coding agent that has access to your OpenClaw machine. The prompt uses the one-time setup code, so you do not need to paste a bot PAT or webhook signing secret manually.
 
 ## Manual Config
 
