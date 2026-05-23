@@ -11,6 +11,12 @@ openclaw plugins install @itspers/openclaw-leadtime-plugin
 openclaw plugins enable leadtime
 ```
 
+Then run the setup wizard on the same machine as your OpenClaw gateway:
+
+```bash
+npx @itspers/openclaw-leadtime-plugin setup
+```
+
 For local development:
 
 ```bash
@@ -25,6 +31,8 @@ openclaw plugins install --link /path/to/openclaw-leadtime-plugin
 4. Set the webhook URL to your OpenClaw gateway route, for example `https://openclaw.example.com/leadtime/webhook`.
 5. Generate/copy the Leadtime webhook signing secret.
 6. Add the bot to this plugin config.
+
+For step-by-step setup, existing VPS/local gateway notes, and agent-assisted install prompts, see [docs/setup.md](docs/setup.md).
 
 ## Configuration
 
@@ -80,7 +88,7 @@ Set `exposeRawApiCredentialToAgent: true` only for trusted agents. It puts the b
 
 ## Docker
 
-See [examples/docker-compose.yml](examples/docker-compose.yml). Mount `~/.codex` and `~/.openclaw` if your OpenClaw agent uses the local Codex auth profile. For OAuth-based model providers, prefer a copied writable OpenClaw state directory per container so the host and container do not race on the same refresh token.
+See [examples/docker-compose.yml](examples/docker-compose.yml). This is a development smoke-test harness for the plugin repo, not the recommended user deployment model. Normal users install the plugin into their existing local, workstation, or VPS OpenClaw gateway.
 
 For headless/plugin-only gateways, initialize OpenClaw first or set `agents.defaults.skipBootstrap: true` in `openclaw.json`. A brand-new OpenClaw workspace may otherwise inject first-run bootstrap guidance into the first Leadtime task session.
 

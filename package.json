@@ -6,6 +6,9 @@
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "leadtime-openclaw": "./dist/src/setup-cli.js"
+  },
   "files": [
     "dist",
     "openclaw.plugin.json",
@@ -14,7 +17,7 @@
     "examples"
   ],
   "scripts": {
-    "build": "tsup index.ts --format esm --dts --clean",
+    "build": "tsup index.ts src/setup-cli.ts --format esm --dts --clean",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "eslint . --ext .ts"
