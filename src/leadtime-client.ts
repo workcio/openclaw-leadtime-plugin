@@ -102,7 +102,7 @@ export class LeadtimeClient {
   }
 
   listTaskStatuses() {
-    return this.request({ path: "/tasks/statuses", query: { includeDeleted: false } });
+    return this.request({ path: "/tasks/statuses" });
   }
 
   addTaskComment(identifier: string, comment: string) {
