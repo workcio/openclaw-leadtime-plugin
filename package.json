@@ -7,7 +7,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "leadtime-openclaw": "./dist/src/setup-cli.js"
+    "leadtime-openclaw": "./dist/src/setup-cli.js",
+    "leadtime-openclaw-connector": "./dist/src/connector.js"
   },
   "files": [
     "dist",
@@ -17,7 +18,7 @@
     "examples"
   ],
   "scripts": {
-    "build": "tsup index.ts src/setup-cli.ts --format esm --dts --clean",
+    "build": "tsup index.ts src/setup-cli.ts src/connector.ts --format esm --dts --clean",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "eslint . --ext .ts",

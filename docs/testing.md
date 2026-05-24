@@ -24,7 +24,7 @@ Run these against a local Leadtime app and an existing OpenClaw gateway with the
 | Full mode with raw API | Trusted agent can perform script-based batch API calls using the injected PAT and OpenAPI URL. |
 | Invalid signature | Webhook is rejected before an OpenClaw run starts. |
 | Retry/idempotency | Re-sending the same webhook event does not start duplicate OpenClaw runs. |
-| Private gateway URL | Leadtime cannot deliver webhooks unless the gateway URL is reachable from Leadtime. |
+| Private connector URL | Leadtime cannot deliver webhooks unless the connector URL is reachable from Leadtime. |
 
 ## Development Harness
 
@@ -64,7 +64,7 @@ docker compose \
   up --build
 ```
 
-The harness uses `node:24-bookworm`, installs the requested OpenClaw version, copies this plugin source into the container, links the plugin into OpenClaw, and starts a gateway on `http://localhost:19011`. Keep `.local/openclaw-state` if you want the same OpenClaw identity/config between runs; delete it for a clean gateway.
+The harness uses `node:24-bookworm`, installs the requested OpenClaw version, copies this plugin source into the container, links the plugin into OpenClaw, starts a gateway on `http://localhost:19011`, and starts the Leadtime connector on `http://localhost:19339/leadtime/webhook`. Keep `.local/openclaw-state` if you want the same OpenClaw identity/config between runs; delete it for a clean gateway.
 
 Check the gateway from the host:
 
@@ -126,7 +126,7 @@ npx --yes github:workcio/openclaw-leadtime-plugin setup \
   --mode basic
 ```
 
-Use `http://host.docker.internal:9221/api`, not `http://localhost:9221/api`, because the setup runs for the Dockerized OpenClaw environment. If the gateway webhook URL is needed explicitly, use `http://host.docker.internal:19011/leadtime/webhook` for host-to-container testing or expose `19011` publicly when testing Leadtime Cloud.
+Use `http://host.docker.internal:9221/api`, not `http://localhost:9221/api`, because the setup runs for the Dockerized OpenClaw environment. The webhook URL saved in Leadtime should point to the connector, `http://localhost:19339/leadtime/webhook`, for local host tests. For Leadtime Cloud, expose the connector port through stable public HTTPS instead of exposing the full OpenClaw gateway.
 
 After setup, assign or mention the bot on a Leadtime task. Expected result: Leadtime creates a session card, sends the webhook to the OpenClaw plugin, the plugin reports activity, and the bot writes a normal task comment.
 

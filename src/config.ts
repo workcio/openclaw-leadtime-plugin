@@ -16,6 +16,7 @@ export type LeadtimeBotConfig = {
 export type LeadtimePluginConfig = {
   leadtimeBaseUrl: string;
   webhookPath: string;
+  openClawGatewayBaseUrl: string;
   runner: {
     command: string;
     timeoutSeconds: number;
@@ -81,6 +82,7 @@ export function parsePluginConfig(raw: Record<string, unknown> | undefined): Lea
   return {
     leadtimeBaseUrl,
     webhookPath: normalizePath(readString(config.webhookPath, "/leadtime/webhook")),
+    openClawGatewayBaseUrl: normalizeBaseUrl(readString(config.openClawGatewayBaseUrl, "http://127.0.0.1:18789")),
     runner: {
       command: readString(rawRunner.command, "openclaw"),
       timeoutSeconds:

@@ -44,7 +44,7 @@ export function validateGatewayPublicUrlForLeadtime(
   } catch {
     return {
       ok: false,
-      reason: `OpenClaw gateway URL is not a valid URL: ${gatewayPublicUrl}`,
+      reason: `Connector URL is not a valid URL: ${gatewayPublicUrl}`,
       help: publicUrlHelp(),
     };
   }
@@ -55,7 +55,7 @@ export function validateGatewayPublicUrlForLeadtime(
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     return {
       ok: false,
-      reason: `OpenClaw gateway URL must use HTTPS for Leadtime SaaS webhooks: ${gatewayPublicUrl}`,
+      reason: `Connector URL must use HTTPS for Leadtime SaaS webhooks: ${gatewayPublicUrl}`,
       help: publicUrlHelp(),
     };
   }
@@ -64,7 +64,7 @@ export function validateGatewayPublicUrlForLeadtime(
     if (leadtimeIsLocal) return { ok: true };
     return {
       ok: false,
-      reason: `OpenClaw gateway URL ${gatewayPublicUrl} points to localhost. Leadtime SaaS cannot call a user's local machine.`,
+      reason: `Connector URL ${gatewayPublicUrl} points to localhost. Leadtime SaaS cannot call a user's local machine.`,
       help: publicUrlHelp(),
     };
   }
@@ -73,7 +73,7 @@ export function validateGatewayPublicUrlForLeadtime(
     if (leadtimeIsLocal) return { ok: true };
     return {
       ok: false,
-      reason: `OpenClaw gateway URL ${gatewayPublicUrl} is private or tailnet-only. Leadtime SaaS cannot deliver webhooks to it.`,
+      reason: `Connector URL ${gatewayPublicUrl} is private or tailnet-only. Leadtime SaaS cannot deliver webhooks to it.`,
       help: publicUrlHelp(),
     };
   }
@@ -81,7 +81,7 @@ export function validateGatewayPublicUrlForLeadtime(
   if (!leadtimeIsLocal && parsed.protocol !== "https:") {
     return {
       ok: false,
-      reason: `OpenClaw gateway URL must use HTTPS for Leadtime SaaS webhooks: ${gatewayPublicUrl}`,
+      reason: `Connector URL must use HTTPS for Leadtime SaaS webhooks: ${gatewayPublicUrl}`,
       help: publicUrlHelp(),
     };
   }
@@ -91,7 +91,9 @@ export function validateGatewayPublicUrlForLeadtime(
 
 function detectGatewayPublicUrlFromEnv(): GatewayUrlCandidate | undefined {
   const envKeys = [
+    "LEADTIME_OPENCLAW_CONNECTOR_PUBLIC_URL",
     "LEADTIME_OPENCLAW_GATEWAY_PUBLIC_URL",
+    "OPENCLAW_LEADTIME_CONNECTOR_PUBLIC_URL",
     "OPENCLAW_GATEWAY_PUBLIC_URL",
     "OPENCLAW_PUBLIC_URL",
     "PUBLIC_URL",
@@ -198,9 +200,9 @@ function isPrivateHostname(hostname: string): boolean {
 
 function publicUrlHelp(): string[] {
   return [
-    "Expose the OpenClaw gateway through a public HTTPS URL, then rerun setup.",
+    "Expose the Leadtime connector through a public HTTPS URL, then rerun setup.",
     "Good options: Tailscale Funnel, Cloudflare Tunnel, nginx/Caddy reverse proxy, or an existing public OpenClaw domain.",
     "For private Tailscale/lan addresses, Serve is not enough for Leadtime SaaS; use Funnel or another public HTTPS tunnel.",
-    "If you already have a public OpenClaw URL, pass --gateway-public-url https://your-openclaw.example.com.",
+    "If you already have a public connector URL, pass --connector-public-url https://your-agent.example.com.",
   ];
 }

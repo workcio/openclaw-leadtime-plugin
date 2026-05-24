@@ -2,7 +2,7 @@
 
 Connects Leadtime self-hosted agent sessions to OpenClaw agents.
 
-Leadtime calls this plugin through the bot webhook. The plugin verifies the Leadtime HMAC signature, binds the Leadtime `agentRunId` to one OpenClaw agent session, dispatches the configured OpenClaw agent, and reports status/activity back to Leadtime through the public agent-session API.
+Leadtime calls a small `leadtime-openclaw-connector` webhook process. The connector forwards signed webhooks to the local OpenClaw plugin route, so the OpenClaw gateway itself can stay private. The plugin verifies the Leadtime HMAC signature, binds the Leadtime `agentRunId` to one OpenClaw agent session, dispatches the configured OpenClaw agent, and reports status/activity back to Leadtime through the public agent-session API.
 
 ## Install
 
@@ -19,7 +19,13 @@ npx --yes github:workcio/openclaw-leadtime-plugin setup \
   --claim lt_conn_...
 ```
 
-The wizard runs on the OpenClaw machine, so it resolves the gateway public URL from existing config or environment. If it detects a private/local URL for Leadtime Cloud, it stops before claiming the setup code and explains how to expose OpenClaw safely.
+The wizard runs on the OpenClaw machine, so it resolves the connector public URL from existing config or environment. If it detects a private/local URL for Leadtime Cloud, it stops before claiming the setup code and explains how to expose only the connector safely.
+
+After setup, restart OpenClaw and start the connector:
+
+```bash
+leadtime-openclaw-connector
+```
 
 For local development:
 
@@ -48,6 +54,7 @@ For step-by-step setup, existing VPS/local gateway notes, and agent-assisted ins
         "config": {
           "leadtimeBaseUrl": "https://app.leadtime.de/api",
           "webhookPath": "/leadtime/webhook",
+          "openClawGatewayBaseUrl": "http://127.0.0.1:18789",
           "runner": {
             "timeoutSeconds": 900,
             "thinking": "medium"

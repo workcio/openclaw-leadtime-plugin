@@ -34,7 +34,7 @@ async function main() {
     const prompt = buildAgentInstallPrompt({
       leadtimeBaseUrl: requiredArg(args, "leadtime-base-url"),
       webhookPath: stringArg(args, "webhook-path"),
-      gatewayPublicUrl: stringArg(args, "gateway-public-url"),
+      gatewayPublicUrl: connectorPublicUrlArg(args),
       botUserId: requiredArg(args, "bot-user-id"),
       mode: modeArg(args),
       exposeRawApiCredentialToAgent: boolArg(args, "raw-api"),
@@ -56,7 +56,7 @@ async function main() {
 
   const webhookUrl = setup.gatewayPublicUrl
     ? buildWebhookUrl(setup.gatewayPublicUrl, setup.webhookPath)
-    : "<your-openclaw-public-url>/leadtime/webhook";
+    : "<your-connector-public-url>/leadtime/webhook";
 
   console.log("");
   console.log(args["dry-run"] ? "Dry run complete." : `Updated ${configPath}.`);
@@ -66,12 +66,14 @@ async function main() {
   console.log("   openclaw plugins install git:github.com/workcio/openclaw-leadtime-plugin@main");
   console.log("   openclaw plugins enable leadtime");
   console.log("2. Restart the OpenClaw gateway.");
+  console.log("3. Start the Leadtime connector near OpenClaw:");
+  console.log("   leadtime-openclaw-connector");
   if (args["claim"]) {
-    console.log(`3. Leadtime has saved this bot webhook URL: ${webhookUrl}`);
+    console.log(`4. Leadtime has saved this bot webhook URL: ${webhookUrl}`);
   } else {
-    console.log(`3. In Leadtime, set this bot webhook URL to: ${webhookUrl}`);
+    console.log(`4. In Leadtime, set this bot webhook URL to: ${webhookUrl}`);
   }
-  console.log("4. Assign a test task to the bot and confirm the Leadtime session card updates.");
+  console.log("5. Assign a test task to the bot and confirm the Leadtime session card updates.");
 }
 
 async function collectSetup(args: Args, existingConfig: Record<string, unknown>): Promise<SetupInput> {
@@ -85,7 +87,7 @@ async function collectSetup(args: Args, existingConfig: Record<string, unknown>)
       if (args["dry-run"]) {
         throw new Error("--dry-run cannot be used with --claim because claiming enables the Leadtime bot connection.");
       }
-      const gatewayPublicUrl = await resolveGatewayPublicUrl(rl, args, existingConfig, leadtimeBaseUrl);
+      const gatewayPublicUrl = await resolveConnectorPublicUrl(rl, args, existingConfig, leadtimeBaseUrl);
       return claimSetupToken({
         leadtimeBaseUrl,
         setupToken: claimToken,
@@ -97,10 +99,10 @@ async function collectSetup(args: Args, existingConfig: Record<string, unknown>)
     const gatewayPublicUrl = await askOptional(
       rl,
       args,
-      "gateway-public-url",
+      "connector-public-url",
       detected
-        ? `Public OpenClaw gateway URL reachable by Leadtime (${detected.source})`
-        : "Public OpenClaw gateway URL reachable by Leadtime",
+        ? `Public connector URL reachable by Leadtime (${detected.source})`
+        : "Public connector URL reachable by Leadtime",
       detected?.url,
     );
     if (gatewayPublicUrl) validateGatewayOrThrow(gatewayPublicUrl, leadtimeBaseUrl);
@@ -121,6 +123,7 @@ async function collectSetup(args: Args, existingConfig: Record<string, unknown>)
       leadtimeBaseUrl,
       webhookPath,
       gatewayPublicUrl,
+      openClawGatewayBaseUrl: stringArg(args, "openclaw-gateway-url") || "http://127.0.0.1:18789",
       skipBootstrap: true,
       bot: {
         name: await ask(rl, args, "name", "Connection name", "Leadtime Bot"),
@@ -138,7 +141,7 @@ async function collectSetup(args: Args, existingConfig: Record<string, unknown>)
   }
 }
 
-async function resolveGatewayPublicUrl(
+async function resolveConnectorPublicUrl(
   rl: ReturnType<typeof createInterface>,
   args: Args,
   existingConfig: Record<string, unknown>,
@@ -148,10 +151,10 @@ async function resolveGatewayPublicUrl(
   const value = await askOptional(
     rl,
     args,
-    "gateway-public-url",
+    "connector-public-url",
     detected
-      ? `Public OpenClaw gateway URL reachable by Leadtime (${detected.source})`
-      : "Public OpenClaw gateway URL reachable by Leadtime",
+      ? `Public connector URL reachable by Leadtime (${detected.source})`
+      : "Public connector URL reachable by Leadtime",
     detected?.url,
   );
   if (value) {
@@ -160,9 +163,9 @@ async function resolveGatewayPublicUrl(
   }
   throw new Error(
     [
-      "Could not determine the public OpenClaw gateway URL.",
-      "Leadtime uses webhooks, so it must be able to reach your OpenClaw gateway over public HTTPS.",
-      "Run setup in an interactive terminal, set LEADTIME_OPENCLAW_GATEWAY_PUBLIC_URL, or pass --gateway-public-url.",
+      "Could not determine the public connector URL.",
+      "Leadtime uses webhooks, so it must be able to reach the Leadtime OpenClaw connector over public HTTPS.",
+      "Run setup in an interactive terminal, set LEADTIME_OPENCLAW_CONNECTOR_PUBLIC_URL, or pass --connector-public-url.",
       "",
       ...gatewaySetupHelp(),
     ].join("\n"),
@@ -173,7 +176,7 @@ function validateGatewayOrThrow(gatewayPublicUrl: string, leadtimeBaseUrl: strin
   const validation = validateGatewayPublicUrlForLeadtime(gatewayPublicUrl, leadtimeBaseUrl);
   if (validation.ok) return;
   throw new Error([
-    validation.reason || "OpenClaw gateway URL is not usable for Leadtime webhooks.",
+    validation.reason || "Connector URL is not usable for Leadtime webhooks.",
     "",
     ...(validation.help || gatewaySetupHelp()),
   ].join("\n"));
@@ -182,9 +185,9 @@ function validateGatewayOrThrow(gatewayPublicUrl: string, leadtimeBaseUrl: strin
 function gatewaySetupHelp(): string[] {
   return [
     "Options:",
-    "- Tailscale Funnel: run OpenClaw with `openclaw gateway --tailscale funnel --auth password` or configure `gateway.tailscale.mode = \"funnel\"`.",
-    "- Cloudflare Tunnel: use a named tunnel for a stable URL, then set LEADTIME_OPENCLAW_GATEWAY_PUBLIC_URL to that HTTPS hostname.",
-    "- Reverse proxy: expose `http://127.0.0.1:18789` through nginx/Caddy/Traefik with HTTPS.",
+    "- Tailscale Funnel: expose the connector port, for example `tailscale funnel 9339` on the OpenClaw machine.",
+    "- Cloudflare Tunnel: create a named tunnel to `http://127.0.0.1:9339`, then set LEADTIME_OPENCLAW_CONNECTOR_PUBLIC_URL to that HTTPS hostname.",
+    "- Reverse proxy: expose `http://127.0.0.1:9339` through nginx/Caddy/Traefik with HTTPS.",
     "- Quick Cloudflare tunnels are useful for testing, but not a good permanent bot webhook URL because they are account-less and not guaranteed stable.",
   ];
 }
@@ -217,6 +220,7 @@ async function claimSetupToken(params: {
     leadtimeBaseUrl: params.leadtimeBaseUrl,
     webhookPath: String(body["webhookPath"] || "/leadtime/webhook"),
     gatewayPublicUrl: params.gatewayPublicUrl,
+    openClawGatewayBaseUrl: "http://127.0.0.1:18789",
     skipBootstrap: true,
     bot: {
       name: String(body["botName"] || "Leadtime Bot"),
@@ -325,12 +329,19 @@ function parseArgs(values: string[]): Args {
       args[withoutPrefix] = true;
     }
   }
+  if (args["gateway-public-url"] && !args["connector-public-url"]) {
+    args["connector-public-url"] = args["gateway-public-url"];
+  }
   return args;
 }
 
 function stringArg(args: Args, key: string): string | undefined {
   const value = args[key];
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function connectorPublicUrlArg(args: Args): string | undefined {
+  return stringArg(args, "connector-public-url") || stringArg(args, "gateway-public-url");
 }
 
 function requiredArg(args: Args, key: string): string {
@@ -358,13 +369,15 @@ function printHelp() {
 Usage:
   leadtime-openclaw setup
   leadtime-openclaw --leadtime-base-url https://leadtime.app --claim <setup-code>
-  leadtime-openclaw --leadtime-base-url https://leadtime.app --gateway-public-url https://agent.example.com --bot-user-id <id> --bot-pat <pat> --webhook-secret <secret>
+  leadtime-openclaw --leadtime-base-url https://leadtime.app --connector-public-url https://agent.example.com --bot-user-id <id> --bot-pat <pat> --webhook-secret <secret>
   leadtime-openclaw --print-agent-prompt --leadtime-base-url https://leadtime.app --bot-user-id <id>
 
 Options:
   --config <path>                OpenClaw config path. Defaults to ~/.openclaw/openclaw.json
   --leadtime-base-url <url>      Leadtime app URL or API URL
-  --gateway-public-url <url>     Public OpenClaw gateway URL reachable by Leadtime. Optional with --claim when it can be detected or entered interactively
+  --connector-public-url <url>   Public Leadtime connector URL reachable by Leadtime. Optional with --claim when it can be detected or entered interactively
+  --gateway-public-url <url>     Backward-compatible alias for --connector-public-url
+  --openclaw-gateway-url <url>   Local OpenClaw gateway URL for the connector. Defaults to http://127.0.0.1:18789
   --claim <token>                One-time Leadtime connector setup token
   --webhook-path <path>          Plugin route. Defaults to /leadtime/webhook
   --bot-user-id <id>             Leadtime bot user id

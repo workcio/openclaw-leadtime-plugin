@@ -18,9 +18,11 @@ services:
       npm install --omit=dev --ignore-scripts --legacy-peer-deps &&
       cd /work/plugin &&
       openclaw plugins install --link /work/plugin-runtime &&
+      node /work/plugin-runtime/dist/src/connector.js --host 0.0.0.0 --port 9339 &
       openclaw gateway run --port 19011 --auth token --token $${OPENCLAW_GATEWAY_TOKEN:-change-me} --bind auto --allow-unconfigured"
     ports:
       - "19011:19011"
+      - "19339:9339"
     volumes:
       - ${PLUGIN_SOURCE_DIR:-..}:/srcplugin:ro
       - ${OPENCLAW_STATE_DIR:-${HOME}/.openclaw}:/root/.openclaw
