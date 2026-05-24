@@ -9,6 +9,14 @@
       "label": "Webhook path",
       "help": "Path exposed by OpenClaw for Leadtime webhooks. Default: /leadtime/webhook."
     },
+    "openClawGatewayBaseUrl": {
+      "label": "Local OpenClaw gateway URL",
+      "help": "Private local gateway URL used by the connector. Default: http://127.0.0.1:18789."
+    },
+    "connector": {
+      "label": "Leadtime connector listener",
+      "help": "Public-facing listener owned by the OpenClaw gateway lifecycle. Expose this port, not the whole gateway."
+    },
     "bots": {
       "label": "Leadtime bots",
       "help": "One or more Leadtime bot connections."
@@ -34,6 +42,15 @@
       "leadtimeBaseUrl": { "type": "string" },
       "webhookPath": { "type": "string" },
       "gatewayPublicUrl": { "type": "string" },
+      "openClawGatewayBaseUrl": { "type": "string" },
+      "connector": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "host": { "type": "string" },
+          "port": { "type": "number" }
+        }
+      },
       "runner": {
         "type": "object",
         "additionalProperties": false,

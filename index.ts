@@ -1,5 +1,9 @@
 import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
 import { findBotBySecret, parsePluginConfig } from "./src/config.js";
+import {
+  startLeadtimeOpenClawConnector,
+  stopLeadtimeOpenClawConnector,
+} from "./src/connector-server.js";
 import { readRawBody, sendJson } from "./src/http.js";
 import { dispatchLeadtimeSession, type LeadtimeWebhookPayload } from "./src/runner.js";
 import { SessionStore } from "./src/session-store.js";
@@ -75,15 +79,30 @@ export default definePluginEntry({
     registerLeadtimeTools(api, config, sessions);
 
     let dispatchInterval: ReturnType<typeof setInterval> | undefined;
+    let connectorServer:
+      | Awaited<ReturnType<typeof startLeadtimeOpenClawConnector>>
+      | undefined;
     api.registerService({
       id: "leadtime-dispatch-queue",
-      start() {
+      async start() {
         dispatchInterval = setInterval(() => {
           void drainQueue();
         }, 500);
+        connectorServer = await startLeadtimeOpenClawConnector({
+          host: config.connector.host,
+          port: config.connector.port,
+          config,
+        });
+        api.logger.info(
+          `Leadtime connector listening on http://${config.connector.host}:${config.connector.port}${config.webhookPath}`,
+        );
       },
-      stop() {
+      async stop() {
         if (dispatchInterval) clearInterval(dispatchInterval);
+        if (connectorServer) {
+          await stopLeadtimeOpenClawConnector(connectorServer);
+          connectorServer = undefined;
+        }
       },
     });
 

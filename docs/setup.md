@@ -9,18 +9,11 @@ Use this plugin with an existing OpenClaw gateway on your laptop, workstation, o
 - A Leadtime connector public URL that Leadtime can reach.
 - The OpenClaw agent id to run, usually `main`.
 
-If OpenClaw is only available on a private network such as Tailscale, keep it private. Expose the small `leadtime-openclaw-connector` process instead. Leadtime Cloud must be able to call the connector webhook URL over public HTTPS.
+If OpenClaw is only available on a private network such as Tailscale, keep it private. Expose only the Leadtime connector port. The connector listener is started by the OpenClaw plugin when the gateway starts, but it binds to a separate port so the whole gateway does not need to be public. Leadtime Cloud must be able to call the connector webhook URL over public HTTPS.
 
 ## Fast Path
 
-Install the plugin into OpenClaw:
-
-```bash
-openclaw plugins install git:github.com/workcio/openclaw-leadtime-plugin@main
-openclaw plugins enable leadtime
-```
-
-Generate a setup code in Leadtime, then run the setup wizard:
+Generate a setup code in Leadtime, then run the setup wizard on the OpenClaw machine:
 
 ```bash
 npx --yes github:workcio/openclaw-leadtime-plugin setup \
@@ -29,13 +22,16 @@ npx --yes github:workcio/openclaw-leadtime-plugin setup \
   --agent-id main
 ```
 
-Claiming the setup code enables webhooks/sessions in Leadtime, creates a fresh bot PAT, stores the connector webhook URL, patches `~/.openclaw/openclaw.json`, enables the plugin, and sets `agents.defaults.skipBootstrap=true` for clean headless task sessions. The wizard resolves the connector public URL on the OpenClaw machine from existing config or environment. If it detects a local/private URL for Leadtime Cloud, it stops before claiming the setup code and prints setup options.
+Claiming the setup code enables webhooks/sessions in Leadtime, creates a fresh bot PAT, stores the connector webhook URL, patches `~/.openclaw/openclaw.json`, prepares a runtime-only plugin package at `~/.openclaw/plugins/leadtime-runtime`, and sets `agents.defaults.skipBootstrap=true` for clean headless task sessions. The wizard resolves the connector public URL on the OpenClaw machine from existing config or environment. If it detects a local/private URL for Leadtime Cloud, it stops before claiming the setup code and prints setup options.
 
-Restart your OpenClaw gateway after the wizard, then start the connector:
+Install the generated runtime package:
 
 ```bash
-leadtime-openclaw-connector
+openclaw plugins install --link ~/.openclaw/plugins/leadtime-runtime
+openclaw plugins enable leadtime
 ```
+
+Restart your OpenClaw gateway after the wizard. The Leadtime connector listener starts and stops with the gateway lifecycle.
 
 You can run the wizard again later to connect another Leadtime bot to another OpenClaw agent. Existing Leadtime bot entries are preserved. If you run it again with the same Leadtime bot user id, that bot entry is updated.
 
@@ -79,6 +75,10 @@ npx --yes github:workcio/openclaw-leadtime-plugin setup \
 ```
 
 When using `--claim`, Leadtime saves the webhook URL during claim. With manual setup, save `https://agent.example.com/leadtime/webhook` in Leadtime yourself.
+
+The standalone `leadtime-openclaw-connector` command remains available for development and debugging, but normal installs should let the OpenClaw plugin own the connector lifecycle.
+
+Do not install the setup package itself as an OpenClaw plugin. The setup package contains the provisioning CLI, while the generated `leadtime-runtime` package contains only the safe plugin runtime that OpenClaw should load.
 
 ## Agent-Assisted Setup
 

@@ -17,6 +17,10 @@ export type LeadtimePluginConfig = {
   leadtimeBaseUrl: string;
   webhookPath: string;
   openClawGatewayBaseUrl: string;
+  connector: {
+    host: string;
+    port: number;
+  };
   runner: {
     command: string;
     timeoutSeconds: number;
@@ -55,6 +59,7 @@ export function parsePluginConfig(raw: Record<string, unknown> | undefined): Lea
   }
 
   const rawRunner = (config.runner ?? {}) as Record<string, unknown>;
+  const rawConnector = (config.connector ?? {}) as Record<string, unknown>;
   const rawBots = Array.isArray(config.bots) ? config.bots : [];
   const bots = rawBots.map((entry, index): LeadtimeBotConfig => {
     const rawBot = entry as Record<string, unknown>;
@@ -83,6 +88,13 @@ export function parsePluginConfig(raw: Record<string, unknown> | undefined): Lea
     leadtimeBaseUrl,
     webhookPath: normalizePath(readString(config.webhookPath, "/leadtime/webhook")),
     openClawGatewayBaseUrl: normalizeBaseUrl(readString(config.openClawGatewayBaseUrl, "http://127.0.0.1:18789")),
+    connector: {
+      host: readString(rawConnector.host, "0.0.0.0"),
+      port:
+        typeof rawConnector.port === "number" && Number.isFinite(rawConnector.port)
+          ? Math.max(1, Math.min(65535, Math.floor(rawConnector.port)))
+          : 9339,
+    },
     runner: {
       command: readString(rawRunner.command, "openclaw"),
       timeoutSeconds:

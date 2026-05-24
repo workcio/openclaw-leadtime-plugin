@@ -32,9 +32,7 @@
   "peerDependencies": {
     "openclaw": ">=2026.4.0"
   },
-  "dependencies": {
-    "@sinclair/typebox": "^0.34.41"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^24.10.1",
     "openclaw": "2026.4.29",

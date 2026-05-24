@@ -2,16 +2,11 @@
 
 Connects Leadtime self-hosted agent sessions to OpenClaw agents.
 
-Leadtime calls a small `leadtime-openclaw-connector` webhook process. The connector forwards signed webhooks to the local OpenClaw plugin route, so the OpenClaw gateway itself can stay private. The plugin verifies the Leadtime HMAC signature, binds the Leadtime `agentRunId` to one OpenClaw agent session, dispatches the configured OpenClaw agent, and reports status/activity back to Leadtime through the public agent-session API.
+Leadtime calls a small connector listener owned by the OpenClaw plugin lifecycle. The connector runs on its own port and forwards signed webhooks to the private local OpenClaw plugin route, so the OpenClaw gateway itself can stay private. The plugin verifies the Leadtime HMAC signature, binds the Leadtime `agentRunId` to one OpenClaw agent session, dispatches the configured OpenClaw agent, and reports status/activity back to Leadtime through the public agent-session API.
 
 ## Install
 
-```bash
-openclaw plugins install git:github.com/workcio/openclaw-leadtime-plugin@main
-openclaw plugins enable leadtime
-```
-
-Then generate a one-time setup code in Leadtime bot settings and run the setup wizard on the same machine as your OpenClaw gateway:
+Generate a one-time setup code in Leadtime bot settings and run the setup wizard on the same machine as your OpenClaw gateway:
 
 ```bash
 npx --yes github:workcio/openclaw-leadtime-plugin setup \
@@ -21,16 +16,19 @@ npx --yes github:workcio/openclaw-leadtime-plugin setup \
 
 The wizard runs on the OpenClaw machine, so it resolves the connector public URL from existing config or environment. If it detects a private/local URL for Leadtime Cloud, it stops before claiming the setup code and explains how to expose only the connector safely.
 
-After setup, restart OpenClaw and start the connector:
+The wizard writes a runtime-only plugin package under `~/.openclaw/plugins/leadtime-runtime`. Install that generated runtime, then restart OpenClaw. The Leadtime connector listener starts and stops with the OpenClaw gateway.
 
 ```bash
-leadtime-openclaw-connector
+openclaw plugins install --link ~/.openclaw/plugins/leadtime-runtime
+openclaw plugins enable leadtime
 ```
 
 For local development:
 
 ```bash
-openclaw plugins install --link /path/to/openclaw-leadtime-plugin
+npm run build
+node dist/src/setup-cli.js --leadtime-base-url http://localhost:9220/api --claim <setup-code>
+openclaw plugins install --link ~/.openclaw/plugins/leadtime-runtime
 ```
 
 ## Leadtime Setup
@@ -55,6 +53,10 @@ For step-by-step setup, existing VPS/local gateway notes, and agent-assisted ins
           "leadtimeBaseUrl": "https://app.leadtime.de/api",
           "webhookPath": "/leadtime/webhook",
           "openClawGatewayBaseUrl": "http://127.0.0.1:18789",
+          "connector": {
+            "host": "0.0.0.0",
+            "port": 9339
+          },
           "runner": {
             "timeoutSeconds": 900,
             "thinking": "medium"
@@ -98,7 +100,7 @@ Set `exposeRawApiCredentialToAgent: true` only for trusted agents. It puts the b
 
 ## Docker
 
-See [examples/docker-compose.yml](examples/docker-compose.yml). This is a development smoke-test harness for the plugin repo, not the recommended user deployment model. Normal users install the plugin into their existing local, workstation, or VPS OpenClaw gateway.
+See [examples/docker-compose.yml](examples/docker-compose.yml). This is a development smoke-test harness for the plugin repo, not the recommended user deployment model. Normal users install the plugin into their existing local, workstation, or VPS OpenClaw gateway. The connector listener is started by the plugin when the gateway starts.
 
 For headless/plugin-only gateways, initialize OpenClaw first or set `agents.defaults.skipBootstrap: true` in `openclaw.json`. A brand-new OpenClaw workspace may otherwise inject first-run bootstrap guidance into the first Leadtime task session.
 

@@ -1,4 +1,3 @@
-import { Type } from "@sinclair/typebox";
 import type { AnyAgentTool, OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
 import { LeadtimeClient, findOpenApiAction, listOpenApiActions } from "./leadtime-client.js";
 import type { LeadtimePluginConfig } from "./config.js";
@@ -9,28 +8,34 @@ type ToolResult = {
   details?: unknown;
 };
 
-const SessionSchema = Type.Object(
+type JsonSchema = Record<string, unknown>;
+
+const Schema = {
+  object: (properties: Record<string, JsonSchema>, required: string[] = Object.keys(properties)): JsonSchema => ({
+    type: "object",
+    additionalProperties: false,
+    required,
+    properties,
+  }),
+  string: (description: string): JsonSchema => ({ type: "string", description }),
+  optionalString: (description: string): JsonSchema => ({ type: "string", description }),
+  unknown: (): JsonSchema => ({}),
+};
+
+const SessionSchema = Schema.object(
   {
-    leadtimeSessionId: Type.String({
-      description: "Leadtime agent session id from the current prompt.",
-    }),
+    leadtimeSessionId: Schema.string("Leadtime agent session id from the current prompt."),
   },
-  { additionalProperties: false },
 );
 
-const TaskIdentifierSchema = Type.Object(
+const TaskIdentifierSchema = Schema.object(
   {
-    leadtimeSessionId: Type.String({
-      description: "Leadtime agent session id from the current prompt.",
-    }),
-    taskIdentifier: Type.Optional(
-      Type.String({
-        description:
-          "Task UUID or short number. Defaults to the task from the current Leadtime session.",
-      }),
+    leadtimeSessionId: Schema.string("Leadtime agent session id from the current prompt."),
+    taskIdentifier: Schema.optionalString(
+      "Task UUID or short number. Defaults to the task from the current Leadtime session.",
     ),
   },
-  { additionalProperties: false },
+  ["leadtimeSessionId"],
 );
 
 export function registerLeadtimeTools(
@@ -109,20 +114,15 @@ export function registerLeadtimeTools(
     name: "leadtime_add_task_comment",
     label: "Add Leadtime Task Comment",
     description: "Add a comment to the current Leadtime task or a specified task.",
-    parameters: Type.Object(
+    parameters: Schema.object(
       {
-        leadtimeSessionId: Type.String({
-          description: "Leadtime agent session id from the current prompt.",
-        }),
-        taskIdentifier: Type.Optional(
-          Type.String({
-            description:
-              "Task UUID or short number. Defaults to the task from the current Leadtime session.",
-          }),
+        leadtimeSessionId: Schema.string("Leadtime agent session id from the current prompt."),
+        taskIdentifier: Schema.optionalString(
+          "Task UUID or short number. Defaults to the task from the current Leadtime session.",
         ),
-        comment: Type.String({ description: "Comment body in Markdown or HTML." }),
+        comment: Schema.string("Comment body in Markdown or HTML."),
       },
-      { additionalProperties: false },
+      ["leadtimeSessionId", "comment"],
     ),
     execute: async (_toolCallId: string, rawParams: Record<string, unknown>) => {
       const runId = requireString(rawParams, "leadtimeSessionId");
@@ -150,20 +150,15 @@ export function registerLeadtimeTools(
     name: "leadtime_update_task_status",
     label: "Update Leadtime Task Status",
     description: "Update the current Leadtime task or a specified task to a valid Leadtime status id.",
-    parameters: Type.Object(
+    parameters: Schema.object(
       {
-        leadtimeSessionId: Type.String({
-          description: "Leadtime agent session id from the current prompt.",
-        }),
-        taskIdentifier: Type.Optional(
-          Type.String({
-            description:
-              "Task UUID or short number. Defaults to the task from the current Leadtime session.",
-          }),
+        leadtimeSessionId: Schema.string("Leadtime agent session id from the current prompt."),
+        taskIdentifier: Schema.optionalString(
+          "Task UUID or short number. Defaults to the task from the current Leadtime session.",
         ),
-        statusId: Type.String({ description: "Leadtime task status UUID." }),
+        statusId: Schema.string("Leadtime task status UUID."),
       },
-      { additionalProperties: false },
+      ["leadtimeSessionId", "statusId"],
     ),
     execute: async (_toolCallId: string, rawParams: Record<string, unknown>) => {
       const runId = requireString(rawParams, "leadtimeSessionId");
@@ -193,14 +188,11 @@ export function registerLeadtimeTools(
     name: "leadtime_action_details",
     label: "Leadtime API Action Details",
     description: "Full mode only. Get OpenAPI details for one Leadtime public API action.",
-    parameters: Type.Object(
+    parameters: Schema.object(
       {
-        leadtimeSessionId: Type.String({
-          description: "Leadtime agent session id from the current prompt.",
-        }),
-        action: Type.String({ description: "operationId or 'METHOD /path'." }),
+        leadtimeSessionId: Schema.string("Leadtime agent session id from the current prompt."),
+        action: Schema.string("operationId or 'METHOD /path'."),
       },
-      { additionalProperties: false },
     ),
     execute: async (_toolCallId: string, rawParams: Record<string, unknown>) => {
       const runId = requireString(rawParams, "leadtimeSessionId");
@@ -217,17 +209,20 @@ export function registerLeadtimeTools(
     label: "Execute Leadtime API Action",
     description:
       "Full mode only. Execute a Leadtime public API request by method and public path. Use action details first when unsure.",
-    parameters: Type.Object(
+    parameters: Schema.object(
       {
-        leadtimeSessionId: Type.String({
-          description: "Leadtime agent session id from the current prompt.",
-        }),
-        method: Type.String({ description: "GET, POST, PUT, PATCH, or DELETE." }),
-        path: Type.String({ description: "Path below /api/public, for example /tasks/123." }),
-        query: Type.Optional(Type.Record(Type.String(), Type.Union([Type.String(), Type.Number(), Type.Boolean()]))),
-        body: Type.Optional(Type.Unknown()),
+        leadtimeSessionId: Schema.string("Leadtime agent session id from the current prompt."),
+        method: Schema.string("GET, POST, PUT, PATCH, or DELETE."),
+        path: Schema.string("Path below /api/public, for example /tasks/123."),
+        query: {
+          type: "object",
+          additionalProperties: {
+            oneOf: [{ type: "string" }, { type: "number" }, { type: "boolean" }],
+          },
+        },
+        body: Schema.unknown(),
       },
-      { additionalProperties: false },
+      ["leadtimeSessionId", "method", "path"],
     ),
     execute: async (_toolCallId: string, rawParams: Record<string, unknown>) => {
       const runId = requireString(rawParams, "leadtimeSessionId");

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { fileURLToPath } from "node:url";
 import {
   detectGatewayPublicUrl,
   validateGatewayPublicUrlForLeadtime,
@@ -46,12 +47,14 @@ async function main() {
   const existing = readJsonFile(configPath);
   const setup = await collectSetup(args, existing);
   const merged = mergeOpenClawConfig(existing, setup);
+  let runtimePackagePath: string | undefined;
 
   if (args["dry-run"]) {
     console.log(JSON.stringify(redactSecrets(merged), null, 2));
   } else {
     await mkdir(dirname(configPath), { recursive: true });
     writeFileSync(configPath, `${JSON.stringify(merged, null, 2)}\n`);
+    runtimePackagePath = writeRuntimePackage(dirname(configPath));
   }
 
   const webhookUrl = setup.gatewayPublicUrl
@@ -60,14 +63,16 @@ async function main() {
 
   console.log("");
   console.log(args["dry-run"] ? "Dry run complete." : `Updated ${configPath}.`);
+  if (runtimePackagePath) {
+    console.log(`Prepared OpenClaw plugin runtime at ${runtimePackagePath}.`);
+  }
   console.log("");
   console.log("Next steps:");
   console.log("1. Install/enable the plugin if it is not installed yet:");
-  console.log("   openclaw plugins install git:github.com/workcio/openclaw-leadtime-plugin@main");
+  console.log(`   openclaw plugins install --link ${runtimePackagePath || "<prepared-runtime-path>"}`);
   console.log("   openclaw plugins enable leadtime");
   console.log("2. Restart the OpenClaw gateway.");
-  console.log("3. Start the Leadtime connector near OpenClaw:");
-  console.log("   leadtime-openclaw-connector");
+  console.log("3. The Leadtime connector listener starts with the OpenClaw gateway.");
   if (args["claim"]) {
     console.log(`4. Leadtime has saved this bot webhook URL: ${webhookUrl}`);
   } else {
@@ -92,6 +97,7 @@ async function collectSetup(args: Args, existingConfig: Record<string, unknown>)
         leadtimeBaseUrl,
         setupToken: claimToken,
         gatewayPublicUrl,
+        openClawGatewayBaseUrl: stringArg(args, "openclaw-gateway-url") || "http://127.0.0.1:18789",
         agentId: stringArg(args, "agent-id") || "main",
       });
     }
@@ -196,6 +202,7 @@ async function claimSetupToken(params: {
   leadtimeBaseUrl: string;
   setupToken: string;
   gatewayPublicUrl: string;
+  openClawGatewayBaseUrl: string;
   agentId: string;
 }): Promise<SetupInput> {
   const endpoint = `${normalizeLeadtimeApiBaseUrl(params.leadtimeBaseUrl)}/public/agent-connectors/setup/claim`;
@@ -220,7 +227,7 @@ async function claimSetupToken(params: {
     leadtimeBaseUrl: params.leadtimeBaseUrl,
     webhookPath: String(body["webhookPath"] || "/leadtime/webhook"),
     gatewayPublicUrl: params.gatewayPublicUrl,
-    openClawGatewayBaseUrl: "http://127.0.0.1:18789",
+    openClawGatewayBaseUrl: params.openClawGatewayBaseUrl,
     skipBootstrap: true,
     bot: {
       name: String(body["botName"] || "Leadtime Bot"),
@@ -285,6 +292,62 @@ async function askSecret(
 function readJsonFile(path: string): Record<string, unknown> {
   if (!existsSync(path)) return {};
   return JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+}
+
+function writeRuntimePackage(openClawConfigDir: string): string {
+  const packageRoot = findPackageRoot();
+  const runtimeDir = join(openClawConfigDir, "plugins", "leadtime-runtime");
+  const distDir = join(packageRoot, "dist");
+
+  if (!existsSync(join(distDir, "index.js"))) {
+    throw new Error("The Leadtime OpenClaw plugin runtime is missing. Run npm run build before setup.");
+  }
+
+  rmSync(runtimeDir, { recursive: true, force: true });
+  mkdirSync(join(runtimeDir, "dist"), { recursive: true });
+
+  copyIfExists(join(distDir, "index.js"), join(runtimeDir, "dist", "index.js"));
+  copyIfExists(join(distDir, "index.d.ts"), join(runtimeDir, "dist", "index.d.ts"));
+  for (const entry of readdirSync(distDir)) {
+    if (entry.startsWith("chunk-") && entry.endsWith(".js")) {
+      copyIfExists(join(distDir, entry), join(runtimeDir, "dist", entry));
+    }
+  }
+  copyIfExists(join(packageRoot, "openclaw.plugin.json"), join(runtimeDir, "openclaw.plugin.json"));
+  copyIfExists(join(packageRoot, "README.md"), join(runtimeDir, "README.md"));
+  copyIfExists(join(packageRoot, "docs"), join(runtimeDir, "docs"));
+  writeFileSync(
+    join(runtimeDir, "package.json"),
+    JSON.stringify(
+      {
+        name: "@workcio/openclaw-leadtime-plugin-runtime",
+        version: "0.1.0",
+        type: "module",
+        main: "./dist/index.js",
+        openclaw: { extensions: ["./dist/index.js"] },
+        peerDependencies: { openclaw: ">=2026.4.0" },
+      },
+      null,
+      2,
+    ) + "\n",
+  );
+  return runtimeDir;
+}
+
+function findPackageRoot(): string {
+  let current = dirname(fileURLToPath(import.meta.url));
+  while (current !== dirname(current)) {
+    if (existsSync(join(current, "package.json")) && existsSync(join(current, "openclaw.plugin.json"))) {
+      return current;
+    }
+    current = dirname(current);
+  }
+  throw new Error("Could not locate the Leadtime OpenClaw plugin package root.");
+}
+
+function copyIfExists(source: string, target: string) {
+  if (!existsSync(source)) return;
+  cpSync(source, target, { recursive: true });
 }
 
 function redactSecrets(value: unknown): unknown {
@@ -388,6 +451,9 @@ Options:
   --raw-api <yes|no>             Expose raw Leadtime API credential to the agent
   --dry-run                      Print merged config without writing
   --print-agent-prompt           Print copy-paste prompt for a coding agent
+
+Setup writes a runtime-only plugin package under ~/.openclaw/plugins/leadtime-runtime.
+Install that generated runtime with openclaw plugins install --link; do not install the setup CLI package itself as an OpenClaw plugin.
 `);
 }
 

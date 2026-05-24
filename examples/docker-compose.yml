@@ -11,14 +11,14 @@ services:
       npm install openclaw@$${OPENCLAW_VERSION:-2026.4.29} &&
       npm run build &&
       rm -rf /work/plugin-runtime &&
-      mkdir -p /work/plugin-runtime &&
-      cp -R dist openclaw.plugin.json package.json README.md docs /work/plugin-runtime/ &&
-      rm -rf /work/plugin-runtime/dist/src &&
+      mkdir -p /work/plugin-runtime/dist &&
+      cp dist/index.js dist/chunk-*.js /work/plugin-runtime/dist/ &&
+      cp -R openclaw.plugin.json README.md docs /work/plugin-runtime/ &&
+      node -e \"const fs=require('fs'); fs.writeFileSync('/work/plugin-runtime/package.json', JSON.stringify({name:'@workcio/openclaw-leadtime-plugin-runtime',version:'0.1.0',type:'module',main:'./dist/index.js',openclaw:{extensions:['./dist/index.js']},peerDependencies:{openclaw:'>=2026.4.0'},dependencies:{'@sinclair/typebox':'^0.34.41'}}, null, 2))\" &&
       cd /work/plugin-runtime &&
       npm install --omit=dev --ignore-scripts --legacy-peer-deps &&
       cd /work/plugin &&
       openclaw plugins install --link /work/plugin-runtime &&
-      node /work/plugin-runtime/dist/src/connector.js --host 0.0.0.0 --port 9339 &
       openclaw gateway run --port 19011 --auth token --token $${OPENCLAW_GATEWAY_TOKEN:-change-me} --bind auto --allow-unconfigured"
     ports:
       - "19011:19011"
