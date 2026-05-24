@@ -33,6 +33,7 @@
     "properties": {
       "leadtimeBaseUrl": { "type": "string" },
       "webhookPath": { "type": "string" },
+      "gatewayPublicUrl": { "type": "string" },
       "runner": {
         "type": "object",
         "additionalProperties": false,

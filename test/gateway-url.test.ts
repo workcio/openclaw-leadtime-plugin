@@ -45,6 +45,7 @@ describe("gateway URL discovery", () => {
 
   it("accepts localhost only for local Leadtime", () => {
     expect(validateGatewayPublicUrlForLeadtime("http://localhost:18789", "http://localhost:9220/api").ok).toBe(true);
+    expect(validateGatewayPublicUrlForLeadtime("http://localhost:18789", "http://host.docker.internal:9221/api").ok).toBe(true);
     expect(validateGatewayPublicUrlForLeadtime("http://localhost:18789", "https://leadtime.app/api").ok).toBe(false);
   });
 

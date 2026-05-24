@@ -172,7 +172,12 @@ function isLocalLeadtime(leadtimeBaseUrl: string): boolean {
 }
 
 function isLocalHostname(hostname: string): boolean {
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "host.docker.internal"
+  );
 }
 
 function isPrivateHostname(hostname: string): boolean {

@@ -4,21 +4,31 @@ services:
     working_dir: /work/plugin
     command: >
       bash -lc "npm install -g openclaw@$${OPENCLAW_VERSION:-2026.4.29} &&
+      find /work/plugin -mindepth 1 -maxdepth 1 -exec rm -rf {} + &&
       cp -R /srcplugin/. /work/plugin &&
       rm -rf /work/plugin/node_modules &&
       npm install &&
       npm install openclaw@$${OPENCLAW_VERSION:-2026.4.29} &&
       npm run build &&
-      openclaw plugins install --link /work/plugin &&
+      rm -rf /work/plugin-runtime &&
+      mkdir -p /work/plugin-runtime &&
+      cp -R dist openclaw.plugin.json package.json README.md docs /work/plugin-runtime/ &&
+      rm -rf /work/plugin-runtime/dist/src &&
+      cd /work/plugin-runtime &&
+      npm install --omit=dev --ignore-scripts --legacy-peer-deps &&
+      cd /work/plugin &&
+      openclaw plugins install --link /work/plugin-runtime &&
       openclaw gateway run --port 19011 --auth token --token $${OPENCLAW_GATEWAY_TOKEN:-change-me} --bind auto --allow-unconfigured"
     ports:
       - "19011:19011"
     volumes:
-      - .:/srcplugin:ro
+      - ${PLUGIN_SOURCE_DIR:-..}:/srcplugin:ro
       - ${OPENCLAW_STATE_DIR:-${HOME}/.openclaw}:/root/.openclaw
       - ${CODEX_STATE_DIR:-${HOME}/.codex}:/root/.codex:ro
     environment:
       LEADTIME_BOT_PAT: ${LEADTIME_BOT_PAT}
       LEADTIME_WEBHOOK_SECRET: ${LEADTIME_WEBHOOK_SECRET}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENCLAW_TEST_MODEL: ${OPENCLAW_TEST_MODEL:-openrouter/moonshotai/kimi-k2.6}
     extra_hosts:
       - "host.docker.internal:host-gateway"
